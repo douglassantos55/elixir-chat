@@ -20,4 +20,14 @@ defmodule ChatServer.Command.ProcessorTest do
                Processor.process({:connect, "john-doe"}, %{name: "no-name"})
     end
   end
+
+  describe "error" do
+    test "should return nice messages when errors occur" do
+      assert {nil, "Invalid argument. Type /help for more information on each command.\r\n"} =
+               Processor.process({:error, :invalid_argument}, nil)
+
+      assert {nil, "Something went horribly wrong.\r\n"} =
+               Processor.process({:error, :unexpected_error}, nil)
+    end
+  end
 end
