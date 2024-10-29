@@ -2,6 +2,24 @@ defmodule ChatServer.Command.ProcessorTest do
   use ExUnit.Case
   alias ChatServer.Command.Processor
 
+  describe "help" do
+    test "should list all available commands" do
+      assert {nil,
+              "\r\nAvailable commands:\r\n\r\n/rooms\t\t\t\tList all rooms created.\r\n/users\t\t\t\tList all connected users.\r\n/connect [username]\t\tAuthenticates using the given username.\r\n/create [room-name]\t\tCreates a room with the given name.\r\n/delete [room-name]\t\tDeletes a created room. You must be the one who created the room.\r\n/join [room-name]\t\tJoin an existing room. You'll be able to receive and send messages in this room.\r\n/leave [room-name]\t\tLeave a room. You'll not be able to receive or send messages to this room.\r\n/message [room-name] [message]\tSends the given message to the informed room.\r\n/private [username] [message]\tSends a private message to the given username.\r\n\r\n"} =
+               Processor.process({:help, "all"}, nil)
+    end
+
+    test "should show information about given command" do
+      assert {nil, "\r\n/connect [username]\t\tAuthenticates using the given username.\r\n\r\n"} =
+               Processor.process({:help, "connect"}, nil)
+    end
+
+    test "should return error when command does not exist" do
+      assert {nil, "\r\nInvalid command. Use /help to list the available commands.\r\n\r\n"} =
+               Processor.process({:help, "download"}, nil)
+    end
+  end
+
   describe "connect" do
     setup do
       start_supervised!({Registry, keys: :unique, name: ChatServer.UserRegistry})

@@ -1,4 +1,12 @@
 defmodule ChatServer.Command.TextParser do
+  def parse("/help" <> args) when is_binary(args) do
+    case String.trim(args) |> String.split(" ", trim: true) do
+      [] -> {:help, "all"}
+      [command] -> {:help, command}
+      _ -> {:error, :invalid_argument}
+    end
+  end
+
   def parse("/connect" <> args) when is_binary(args) do
     with username when is_binary(username) <- normalize_username(args) do
       {:connect, username}

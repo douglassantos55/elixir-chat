@@ -1,4 +1,10 @@
 defmodule ChatServer.Command.Processor do
+  alias ChatServer.Command.Commands
+
+  def process({:help, command}, state) do
+    {state, "\r\n" <> Commands.help(command) <> "\r\n"}
+  end
+
   def process({:connect, username}, state) do
     case Registry.register(ChatServer.UserRegistry, username, nil) do
       {:ok, _} -> {Map.put(state, :name, username), "Welcome #{username}!\r\n"}

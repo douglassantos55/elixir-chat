@@ -2,6 +2,20 @@ defmodule ChatServer.Command.TextParserTest do
   use ExUnit.Case
   alias ChatServer.Command.TextParser
 
+  describe "/help" do
+    test "should error when more than one argument" do
+      assert {:error, :invalid_argument} = TextParser.parse("/help connect circuit")
+    end
+
+    test "should be valid without any arguments" do
+      assert {:help, "all"} = TextParser.parse("/help")
+      assert {:help, "all"} = TextParser.parse("/help ")
+      assert {:help, "all"} = TextParser.parse("/help  ")
+      assert {:help, "all"} = TextParser.parse("/help\n")
+      assert {:help, "all"} = TextParser.parse("/help\r\n")
+    end
+  end
+
   describe "/connect" do
     test "should error without name" do
       assert {:error, :invalid_argument} = TextParser.parse("/connect")
