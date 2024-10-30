@@ -8,12 +8,18 @@ defmodule ChatServer.Command.TextParser do
   end
 
   def parse("/connect" <> args) when is_binary(args) do
-    with username when is_binary(username) <- normalize_username(args) do
+    with username when is_binary(username) <- normalize(args) do
       {:connect, username}
     end
   end
 
-  defp normalize_username(username) do
+  def parse("/create" <> args) when is_binary(args) do
+    with room_name when is_binary(room_name) <- normalize(args) do
+      {:create, room_name}
+    end
+  end
+
+  defp normalize(username) do
     case String.split(username, ~r/[^a-z0-9]/, trim: true)
          |> Enum.reject(&(&1 == ""))
          |> Enum.join("-") do

@@ -5,6 +5,15 @@ defmodule ChatServer.Command.Processor do
     {state, "\r\n" <> Commands.help(command) <> "\r\n"}
   end
 
+  def process({:create, room_name}, state) do
+    with :ok <- ensure_connected(state) do
+      case Registry.register(ChatServer.RoomRegistry, room_name, nil) do
+        {:ok, _} -> {state, "Room created.\r\n"}
+        {:error, _} -> {state, "Room already exists. Choose another name for your room.\r\n"}
+      end
+    end
+  end
+
   def process({:connect, username}, state) do
     case Registry.register(ChatServer.UserRegistry, username, nil) do
       {:ok, _} -> {Map.put(state, :name, username), "Welcome #{username}!\r\n"}
@@ -23,5 +32,12 @@ defmodule ChatServer.Command.Processor do
       end
 
     {state, message}
+  end
+
+  defp ensure_connected(state) do
+    case Map.get(state, :name) do
+      nil -> {state, "You must be connected before creating rooms. See /help connect.\r\n"}
+      _ -> :ok
+    end
   end
 end

@@ -20,6 +20,48 @@ defmodule ChatServer.Command.ProcessorTest do
     end
   end
 
+  describe "create" do
+    setup do
+      start_supervised!({Registry, keys: :unique, name: ChatServer.RoomRegistry})
+      :ok
+    end
+
+    test "should start a process" do
+      assert {%{}, "Room created.\r\n"} =
+               Processor.process({:create, "room-name"}, %{name: "john-doe"})
+
+      assert [{_, nil}] = Registry.lookup(ChatServer.RoomRegistry, "room-name")
+    end
+
+    test "should not create room when name already registered" do
+      assert {%{}, "Room created.\r\n"} =
+               Processor.process({:create, "room-name"}, %{name: "john-doe"})
+
+      assert {%{}, "Room already exists. Choose another name for your room.\r\n"} =
+               Processor.process({:create, "room-name"}, %{name: "john-doe"})
+
+      assert [{_, nil}] = Registry.lookup(ChatServer.RoomRegistry, "room-name")
+    end
+
+    test "should be able to create many rooms" do
+      assert {%{}, "Room created.\r\n"} =
+               Processor.process({:create, "lobby"}, %{name: "john-doe"})
+
+      assert {%{}, "Room created.\r\n"} =
+               Processor.process({:create, "games"}, %{name: "john-doe"})
+
+      assert [{_, nil}] = Registry.lookup(ChatServer.RoomRegistry, "lobby")
+      assert [{_, nil}] = Registry.lookup(ChatServer.RoomRegistry, "games")
+    end
+
+    test "should not be able to create without being connected" do
+      assert {%{}, "You must be connected before creating rooms. See /help connect.\r\n"} =
+               Processor.process({:create, "room"}, %{})
+
+      assert [] = Registry.lookup(ChatServer.RoomRegistry, "room")
+    end
+  end
+
   describe "connect" do
     setup do
       start_supervised!({Registry, keys: :unique, name: ChatServer.UserRegistry})

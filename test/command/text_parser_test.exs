@@ -16,6 +16,36 @@ defmodule ChatServer.Command.TextParserTest do
     end
   end
 
+  describe "/create" do
+    test "should error without room name" do
+      assert {:error, :invalid_argument} = TextParser.parse("/create")
+      assert {:error, :invalid_argument} = TextParser.parse("/create  ")
+    end
+
+    test "should replace any separator with dashes" do
+      assert {:create, "john-doe"} = TextParser.parse("/create john doe")
+      assert {:create, "john-doe"} = TextParser.parse("/create john_doe")
+      assert {:create, "john-doe"} = TextParser.parse("/create john#doe")
+      assert {:create, "john-doe"} = TextParser.parse("/create john%doe")
+      assert {:create, "john-doe"} = TextParser.parse("/create john~doe")
+      assert {:create, "john-doe"} = TextParser.parse("/create john$doe")
+      assert {:create, "john-doe"} = TextParser.parse("/create john[doe")
+      assert {:create, "john-doe"} = TextParser.parse("/create john]doe")
+      assert {:create, "john-doe"} = TextParser.parse("/create john)doe")
+      assert {:create, "john-doe"} = TextParser.parse("/create john(doe")
+      assert {:create, "john-doe"} = TextParser.parse("/create john{doe")
+      assert {:create, "john-doe"} = TextParser.parse("/create john}doe")
+      assert {:create, "john-doe"} = TextParser.parse("/create john=doe")
+      assert {:create, "john-doe"} = TextParser.parse("/create john*doe")
+      assert {:create, "john-doe"} = TextParser.parse("/create john+doe")
+      assert {:create, "john-doe"} = TextParser.parse("/create john!doe")
+      assert {:create, "john-doe"} = TextParser.parse("/create john@doe")
+      assert {:create, "john-doe"} = TextParser.parse("/create john/doe")
+      assert {:create, "john-doe"} = TextParser.parse("/create john\\doe")
+      assert {:create, "john-doe"} = TextParser.parse("/create john'doe")
+    end
+  end
+
   describe "/connect" do
     test "should error without name" do
       assert {:error, :invalid_argument} = TextParser.parse("/connect")
