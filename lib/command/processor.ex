@@ -6,10 +6,29 @@ defmodule ChatServer.Command.Processor do
   end
 
   def process({:create, room_name}, state) do
-    with :ok <- ensure_connected(state) do
-      case Registry.register(ChatServer.RoomRegistry, room_name, nil) do
+    with {:ok, username} <- ensure_connected(state) do
+      case ChatServer.Room.Supervisor.create_room(room_name, username) do
         {:ok, _} -> {state, "Room created.\r\n"}
         {:error, _} -> {state, "Room already exists. Choose another name for your room.\r\n"}
+      end
+    end
+  end
+
+  def process({:delete, room_name}, state) do
+    with {:ok, username} <- ensure_connected(state) do
+      case ChatServer.Room.Registry.whereis_name(room_name) do
+        :undefined ->
+          {state, "Room not found.\r\n"}
+
+        room_pid ->
+          case ChatServer.Room.owner?(room_pid, username) do
+            true ->
+              ChatServer.Room.Registry.unregister_name(room_name)
+              {state, "Room deleted.\r\n"}
+
+            false ->
+              {state, "You do not own this room.\r\n"}
+          end
       end
     end
   end
@@ -36,8 +55,11 @@ defmodule ChatServer.Command.Processor do
 
   defp ensure_connected(state) do
     case Map.get(state, :name) do
-      nil -> {state, "You must be connected before creating rooms. See /help connect.\r\n"}
-      _ -> :ok
+      nil ->
+        {state, "You must be connected before performing this action. See /help connect.\r\n"}
+
+      username ->
+        {:ok, username}
     end
   end
 end

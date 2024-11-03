@@ -46,6 +46,36 @@ defmodule ChatServer.Command.TextParserTest do
     end
   end
 
+  describe "delete" do
+    test "should error without room name" do
+      assert {:error, :invalid_argument} = TextParser.parse("/delete")
+      assert {:error, :invalid_argument} = TextParser.parse("/delete ")
+    end
+
+    test "should replace any separator with dashes" do
+      assert {:delete, "john-doe"} = TextParser.parse("/delete john doe")
+      assert {:delete, "john-doe"} = TextParser.parse("/delete john_doe")
+      assert {:delete, "john-doe"} = TextParser.parse("/delete john#doe")
+      assert {:delete, "john-doe"} = TextParser.parse("/delete john%doe")
+      assert {:delete, "john-doe"} = TextParser.parse("/delete john~doe")
+      assert {:delete, "john-doe"} = TextParser.parse("/delete john$doe")
+      assert {:delete, "john-doe"} = TextParser.parse("/delete john[doe")
+      assert {:delete, "john-doe"} = TextParser.parse("/delete john]doe")
+      assert {:delete, "john-doe"} = TextParser.parse("/delete john)doe")
+      assert {:delete, "john-doe"} = TextParser.parse("/delete john(doe")
+      assert {:delete, "john-doe"} = TextParser.parse("/delete john{doe")
+      assert {:delete, "john-doe"} = TextParser.parse("/delete john}doe")
+      assert {:delete, "john-doe"} = TextParser.parse("/delete john=doe")
+      assert {:delete, "john-doe"} = TextParser.parse("/delete john*doe")
+      assert {:delete, "john-doe"} = TextParser.parse("/delete john+doe")
+      assert {:delete, "john-doe"} = TextParser.parse("/delete john!doe")
+      assert {:delete, "john-doe"} = TextParser.parse("/delete john@doe")
+      assert {:delete, "john-doe"} = TextParser.parse("/delete john/doe")
+      assert {:delete, "john-doe"} = TextParser.parse("/delete john\\doe")
+      assert {:delete, "john-doe"} = TextParser.parse("/delete john'doe")
+    end
+  end
+
   describe "/connect" do
     test "should error without name" do
       assert {:error, :invalid_argument} = TextParser.parse("/connect")

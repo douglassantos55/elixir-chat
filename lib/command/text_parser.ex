@@ -19,6 +19,12 @@ defmodule ChatServer.Command.TextParser do
     end
   end
 
+  def parse("/delete" <> args) when is_binary(args) do
+    with room_name when is_binary(room_name) <- normalize(args) do
+      {:delete, room_name}
+    end
+  end
+
   defp normalize(username) do
     case String.split(username, ~r/[^a-z0-9]/, trim: true)
          |> Enum.reject(&(&1 == ""))

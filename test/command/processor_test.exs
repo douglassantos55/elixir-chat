@@ -22,7 +22,8 @@ defmodule ChatServer.Command.ProcessorTest do
 
   describe "create" do
     setup do
-      start_supervised!({Registry, keys: :unique, name: ChatServer.RoomRegistry})
+      start_supervised!({ChatServer.Room.Registry, nil})
+      start_supervised!({ChatServer.Room.Supervisor, nil})
       :ok
     end
 
@@ -30,7 +31,7 @@ defmodule ChatServer.Command.ProcessorTest do
       assert {%{}, "Room created.\r\n"} =
                Processor.process({:create, "room-name"}, %{name: "john-doe"})
 
-      assert [{_, nil}] = Registry.lookup(ChatServer.RoomRegistry, "room-name")
+      refute :undefined == ChatServer.Room.Registry.whereis_name("room-name")
     end
 
     test "should not create room when name already registered" do
@@ -40,7 +41,7 @@ defmodule ChatServer.Command.ProcessorTest do
       assert {%{}, "Room already exists. Choose another name for your room.\r\n"} =
                Processor.process({:create, "room-name"}, %{name: "john-doe"})
 
-      assert [{_, nil}] = Registry.lookup(ChatServer.RoomRegistry, "room-name")
+      assert :undefined != ChatServer.Room.Registry.whereis_name("room-name")
     end
 
     test "should be able to create many rooms" do
@@ -50,15 +51,49 @@ defmodule ChatServer.Command.ProcessorTest do
       assert {%{}, "Room created.\r\n"} =
                Processor.process({:create, "games"}, %{name: "john-doe"})
 
-      assert [{_, nil}] = Registry.lookup(ChatServer.RoomRegistry, "lobby")
-      assert [{_, nil}] = Registry.lookup(ChatServer.RoomRegistry, "games")
+      assert :undefined != ChatServer.Room.Registry.whereis_name("lobby")
+      assert :undefined != ChatServer.Room.Registry.whereis_name("games")
     end
 
     test "should not be able to create without being connected" do
-      assert {%{}, "You must be connected before creating rooms. See /help connect.\r\n"} =
-               Processor.process({:create, "room"}, %{})
+      assert {%{}, "You must be connected before performing this action. See /help connect.\r\n"} =
+               Processor.process({:create, "room-name"}, %{})
 
-      assert [] = Registry.lookup(ChatServer.RoomRegistry, "room")
+      assert :undefined == ChatServer.Room.Registry.whereis_name("room-name")
+    end
+  end
+
+  describe "delete" do
+    setup do
+      start_supervised!({ChatServer.Room.Registry, nil})
+      start_supervised!({ChatServer.Room.Supervisor, nil})
+      :ok
+    end
+
+    test "should not be able to delete without being connected" do
+      {%{}, "You must be connected before performing this action. See /help connect.\r\n"} =
+        Processor.process({:delete, "room"}, %{})
+    end
+
+    test "should not be able to delete rooms created by other users" do
+      assert {%{}, "Room created.\r\n"} =
+               Processor.process({:create, "lobby"}, %{name: "jane-doe"})
+
+      {%{}, "You do not own this room.\r\n"} =
+        Processor.process({:delete, "lobby"}, %{name: "john-doe"})
+    end
+
+    test "should not be able to delete rooms that don't exist" do
+      {%{}, "Room not found.\r\n"} =
+        Processor.process({:delete, "lobby"}, %{name: "john-doe"})
+    end
+
+    test "should be able to delete rooms created by yourself" do
+      assert {%{}, "Room created.\r\n"} =
+               Processor.process({:create, "lobby"}, %{name: "john-doe"})
+
+      {%{}, "Room deleted.\r\n"} =
+        Processor.process({:delete, "lobby"}, %{name: "john-doe"})
     end
   end
 
