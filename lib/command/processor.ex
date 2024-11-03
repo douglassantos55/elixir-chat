@@ -14,6 +14,21 @@ defmodule ChatServer.Command.Processor do
     end
   end
 
+  def process({:join, room_name}, state) do
+    with {:ok, username} <- ensure_connected(state) do
+      case ChatServer.Room.Registry.whereis_name(room_name) do
+        :undefined ->
+          {state, "Room not found.\r\n"}
+
+        pid ->
+          case ChatServer.Room.join(pid, username) do
+            :ok -> {state, "Joined \"#{room_name}\".\r\n"}
+            :already_joined -> {state, "You've already joined \"#{room_name}\".\r\n"}
+          end
+      end
+    end
+  end
+
   def process({:delete, room_name}, state) do
     with {:ok, username} <- ensure_connected(state) do
       case ChatServer.Room.Registry.whereis_name(room_name) do

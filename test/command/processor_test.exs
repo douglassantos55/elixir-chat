@@ -34,6 +34,13 @@ defmodule ChatServer.Command.ProcessorTest do
       refute :undefined == ChatServer.Room.Registry.whereis_name("room-name")
     end
 
+    test "should join created room" do
+      assert {%{}, "Room created.\r\n"} =
+               Processor.process({:create, "room-name"}, %{name: "john-doe"})
+
+      assert ["john-doe"] = ChatServer.Room.list_users("room-name")
+    end
+
     test "should not create room when name already registered" do
       assert {%{}, "Room created.\r\n"} =
                Processor.process({:create, "room-name"}, %{name: "john-doe"})
@@ -94,6 +101,45 @@ defmodule ChatServer.Command.ProcessorTest do
 
       {%{}, "Room deleted.\r\n"} =
         Processor.process({:delete, "lobby"}, %{name: "john-doe"})
+    end
+  end
+
+  describe "join" do
+    setup do
+      start_supervised!({ChatServer.Room.Registry, nil})
+      start_supervised!({ChatServer.Room.Supervisor, nil})
+      :ok
+    end
+
+    test "should not be able to join without being connected" do
+      ChatServer.Room.Supervisor.create_room("lobby", "john")
+
+      assert {%{}, "You must be connected before performing this action. See /help connect.\r\n"} =
+               Processor.process({:join, "lobby"}, %{})
+    end
+
+    test "should not be able to join rooms that don't exist" do
+      assert {%{}, "Room not found.\r\n"} =
+               Processor.process({:join, "lobby"}, %{name: "john-doe"})
+    end
+
+    test "should be able to join multiple rooms" do
+      ChatServer.Room.Supervisor.create_room("lobby", "john")
+      ChatServer.Room.Supervisor.create_room("games", "john")
+
+      assert {%{}, "Joined \"lobby\".\r\n"} = Processor.process({:join, "lobby"}, %{name: "jane"})
+      assert {%{}, "Joined \"games\".\r\n"} = Processor.process({:join, "games"}, %{name: "jane"})
+
+      assert ["john", "jane"] = ChatServer.Room.list_users("lobby")
+      assert ["john", "jane"] = ChatServer.Room.list_users("games")
+    end
+
+    test "should error when already joined" do
+      ChatServer.Room.Supervisor.create_room("lobby", "john")
+      assert {%{}, "Joined \"lobby\".\r\n"} = Processor.process({:join, "lobby"}, %{name: "jane"})
+
+      assert {%{}, "You've already joined \"lobby\".\r\n"} =
+               Processor.process({:join, "lobby"}, %{name: "jane"})
     end
   end
 

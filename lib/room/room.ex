@@ -6,7 +6,11 @@ defmodule ChatServer.Room do
   end
 
   def init(owner) do
-    {:ok, owner}
+    {:ok, {owner, []}}
+  end
+
+  def join(pid, username) when is_pid(pid) do
+    GenServer.call(pid, {:join, username})
   end
 
   def owner?(name, username) when is_binary(name) do
@@ -17,7 +21,22 @@ defmodule ChatServer.Room do
     GenServer.call(pid, {:is_owner, username})
   end
 
-  def handle_call({:is_owner, username}, _, state) do
-    {:reply, state == username, state}
+  def list_users(name) do
+    GenServer.call({:via, ChatServer.Room.Registry, name}, {:list_users})
+  end
+
+  def handle_call({:join, username}, _, {owner, users} = state) do
+    case Enum.any?(users, &(&1 == username)) do
+      true -> {:reply, :already_joined, state}
+      false -> {:reply, :ok, {owner, [username | users]}}
+    end
+  end
+
+  def handle_call({:is_owner, username}, _, {owner, _} = state) do
+    {:reply, owner == username, state}
+  end
+
+  def handle_call({:list_users}, _, {owner, users} = state) do
+    {:reply, [owner | users], state}
   end
 end

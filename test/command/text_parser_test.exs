@@ -76,6 +76,36 @@ defmodule ChatServer.Command.TextParserTest do
     end
   end
 
+  describe "/join" do
+    test "should error without room name" do
+      assert {:error, :invalid_argument} = TextParser.parse("/join")
+      assert {:error, :invalid_argument} = TextParser.parse("/join ")
+    end
+
+    test "should replace any separator with dashes" do
+      assert {:join, "john-doe"} = TextParser.parse("/join john doe")
+      assert {:join, "john-doe"} = TextParser.parse("/join john_doe")
+      assert {:join, "john-doe"} = TextParser.parse("/join john#doe")
+      assert {:join, "john-doe"} = TextParser.parse("/join john%doe")
+      assert {:join, "john-doe"} = TextParser.parse("/join john~doe")
+      assert {:join, "john-doe"} = TextParser.parse("/join john$doe")
+      assert {:join, "john-doe"} = TextParser.parse("/join john[doe")
+      assert {:join, "john-doe"} = TextParser.parse("/join john]doe")
+      assert {:join, "john-doe"} = TextParser.parse("/join john)doe")
+      assert {:join, "john-doe"} = TextParser.parse("/join john(doe")
+      assert {:join, "john-doe"} = TextParser.parse("/join john{doe")
+      assert {:join, "john-doe"} = TextParser.parse("/join john}doe")
+      assert {:join, "john-doe"} = TextParser.parse("/join john=doe")
+      assert {:join, "john-doe"} = TextParser.parse("/join john*doe")
+      assert {:join, "john-doe"} = TextParser.parse("/join john+doe")
+      assert {:join, "john-doe"} = TextParser.parse("/join john!doe")
+      assert {:join, "john-doe"} = TextParser.parse("/join john@doe")
+      assert {:join, "john-doe"} = TextParser.parse("/join john/doe")
+      assert {:join, "john-doe"} = TextParser.parse("/join john\\doe")
+      assert {:join, "john-doe"} = TextParser.parse("/join john'doe")
+    end
+  end
+
   describe "/connect" do
     test "should error without name" do
       assert {:error, :invalid_argument} = TextParser.parse("/connect")
