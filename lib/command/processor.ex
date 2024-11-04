@@ -29,6 +29,21 @@ defmodule ChatServer.Command.Processor do
     end
   end
 
+  def process({:leave, room_name}, state) do
+    with {:ok, username} <- ensure_connected(state) do
+      case ChatServer.Room.Registry.whereis_name(room_name) do
+        :undefined ->
+          {state, "Room not found.\r\n"}
+
+        pid ->
+          case ChatServer.Room.leave(pid, username) do
+            :ok -> {state, "Left \"#{room_name}\".\r\n"}
+            :not_joined -> {state, "You've not joined \"#{room_name}\".\r\n"}
+          end
+      end
+    end
+  end
+
   def process({:delete, room_name}, state) do
     with {:ok, username} <- ensure_connected(state) do
       case ChatServer.Room.Registry.whereis_name(room_name) do

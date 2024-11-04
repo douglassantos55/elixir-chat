@@ -143,6 +143,39 @@ defmodule ChatServer.Command.ProcessorTest do
     end
   end
 
+  describe "leave" do
+    setup do
+      start_supervised!({ChatServer.Room.Registry, nil})
+      start_supervised!({ChatServer.Room.Supervisor, nil})
+      :ok
+    end
+
+    test "should not be able to leave if not connected" do
+      assert {%{}, "You must be connected before performing this action. See /help connect.\r\n"} =
+               Processor.process({:leave, "lobby"}, %{})
+    end
+
+    test "should not be able to leave a room that does not exist" do
+      assert {%{}, "Room not found.\r\n"} =
+               Processor.process({:leave, "lobby"}, %{name: "john"})
+    end
+
+    test "should not be able to leave a room that you've not joined" do
+      ChatServer.Room.Supervisor.create_room("lobby", "jane")
+
+      assert {%{}, "You've not joined \"lobby\".\r\n"} =
+               Processor.process({:leave, "lobby"}, %{name: "john"})
+    end
+
+    test "should leave room" do
+      ChatServer.Room.Supervisor.create_room("lobby", "jane")
+      Processor.process({:join, "lobby"}, %{name: "john"})
+
+      assert {%{}, "Left \"lobby\".\r\n"} =
+               Processor.process({:leave, "lobby"}, %{name: "john"})
+    end
+  end
+
   describe "connect" do
     setup do
       start_supervised!({Registry, keys: :unique, name: ChatServer.UserRegistry})

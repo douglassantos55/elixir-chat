@@ -106,6 +106,36 @@ defmodule ChatServer.Command.TextParserTest do
     end
   end
 
+  describe "/leave" do
+    test "should error without room name" do
+      assert {:error, :invalid_argument} = TextParser.parse("/join")
+      assert {:error, :invalid_argument} = TextParser.parse("/join ")
+    end
+
+    test "should replace any separator with dashes" do
+      assert {:leave, "john-doe"} = TextParser.parse("/leave john doe")
+      assert {:leave, "john-doe"} = TextParser.parse("/leave john_doe")
+      assert {:leave, "john-doe"} = TextParser.parse("/leave john#doe")
+      assert {:leave, "john-doe"} = TextParser.parse("/leave john%doe")
+      assert {:leave, "john-doe"} = TextParser.parse("/leave john~doe")
+      assert {:leave, "john-doe"} = TextParser.parse("/leave john$doe")
+      assert {:leave, "john-doe"} = TextParser.parse("/leave john[doe")
+      assert {:leave, "john-doe"} = TextParser.parse("/leave john]doe")
+      assert {:leave, "john-doe"} = TextParser.parse("/leave john)doe")
+      assert {:leave, "john-doe"} = TextParser.parse("/leave john(doe")
+      assert {:leave, "john-doe"} = TextParser.parse("/leave john{doe")
+      assert {:leave, "john-doe"} = TextParser.parse("/leave john}doe")
+      assert {:leave, "john-doe"} = TextParser.parse("/leave john=doe")
+      assert {:leave, "john-doe"} = TextParser.parse("/leave john*doe")
+      assert {:leave, "john-doe"} = TextParser.parse("/leave john+doe")
+      assert {:leave, "john-doe"} = TextParser.parse("/leave john!doe")
+      assert {:leave, "john-doe"} = TextParser.parse("/leave john@doe")
+      assert {:leave, "john-doe"} = TextParser.parse("/leave john/doe")
+      assert {:leave, "john-doe"} = TextParser.parse("/leave john\\doe")
+      assert {:leave, "john-doe"} = TextParser.parse("/leave john'doe")
+    end
+  end
+
   describe "/connect" do
     test "should error without name" do
       assert {:error, :invalid_argument} = TextParser.parse("/connect")
