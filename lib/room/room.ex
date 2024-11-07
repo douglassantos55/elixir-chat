@@ -3,11 +3,11 @@ defmodule ChatServer.Room do
   use GenServer, restart: :temporary
 
   def start_link([name, owner]) do
-    GenServer.start_link(__MODULE__, owner, name: {:via, ChatServer.Room.Registry, name})
+    GenServer.start_link(__MODULE__, {owner, name}, name: {:via, ChatServer.Room.Registry, name})
   end
 
-  def init(owner) do
-    {:ok, {owner, %{}}}
+  def init({owner, name}) do
+    {:ok, {owner, name, %{}}}
   end
 
   def list_users(name) do
@@ -34,7 +34,7 @@ defmodule ChatServer.Room do
     GenServer.call(pid, {:broadcast, sender, message})
   end
 
-  def handle_call({:join, username}, _, {owner, users} = state) do
+  def handle_call({:join, username}, _, {owner, name, users} = state) do
     case Map.has_key?(users, username) do
       true ->
         {:reply, :already_joined, state}
@@ -42,44 +42,47 @@ defmodule ChatServer.Room do
       false ->
         user_pid = monitor_user(username)
         new_users = Map.put(users, username, user_pid)
-        {:reply, :ok, {owner, new_users}}
+        {:reply, :ok, {owner, name, new_users}}
     end
   end
 
-  def handle_call({:leave, username}, _, {owner, users}) do
+  def handle_call({:leave, username}, _, {owner, name, users}) do
     {response, new_users} =
       case Map.has_key?(users, username) do
         true -> {:ok, Map.delete(users, username)}
         false -> {:not_joined, users}
       end
 
-    {:reply, response, {owner, new_users}}
+    {:reply, response, {owner, name, new_users}}
   end
 
-  def handle_call({:is_owner, username}, _, {owner, _} = state) do
+  def handle_call({:is_owner, username}, _, {owner, _, _} = state) do
     {:reply, owner == username, state}
   end
 
-  def handle_call({:joined, username}, _, {owner, users} = state) do
+  def handle_call({:joined, username}, _, {owner, _, users} = state) do
     {:reply, owner == username || Map.has_key?(users, username), state}
   end
 
-  def handle_call({:list_users}, _, {owner, users} = state) do
+  def handle_call({:list_users}, _, {owner, _, users} = state) do
     {:reply, [owner | Map.keys(users)], state}
   end
 
-  def handle_call({:broadcast, sender, message}, _, {owner, users} = state) do
+  def handle_call({:broadcast, sender, message}, _, {owner, name, users} = state) do
+    timestamp = DateTime.to_string(DateTime.utc_now(:second))
+    formatted_message = "[" <> timestamp <> "] " <> name <> " / " <> sender <> ": " <> message
+
     received =
       for user when user != sender <- [owner | Map.keys(users)] do
-        ChatServer.User.send(user, message)
+        ChatServer.User.send(user, formatted_message)
         user
       end
 
     {:reply, received, state}
   end
 
-  def handle_info({:DOWN, _, :process, pid, _}, {owner, users}) do
-    {:noreply, {owner, Map.reject(users, fn {_, v} -> v == pid end)}}
+  def handle_info({:DOWN, _, :process, pid, _}, {owner, name, users}) do
+    {:noreply, {owner, name, Map.reject(users, fn {_, v} -> v == pid end)}}
   end
 
   defp monitor_user(username) do
