@@ -14,7 +14,6 @@ defmodule ChatServer.User do
     Logger.debug("new connection #{inspect(ip_address)}")
 
     GenServer.start(__MODULE__, %{
-      name: "no-name",
       ip: ip_address,
       socket: socket
     })
