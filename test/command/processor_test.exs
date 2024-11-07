@@ -108,6 +108,7 @@ defmodule ChatServer.Command.ProcessorTest do
     setup do
       start_supervised!({ChatServer.Room.Registry, nil})
       start_supervised!({ChatServer.Room.Supervisor, nil})
+      start_supervised!({Registry, keys: :unique, name: ChatServer.UserRegistry})
       :ok
     end
 
@@ -147,6 +148,7 @@ defmodule ChatServer.Command.ProcessorTest do
     setup do
       start_supervised!({ChatServer.Room.Registry, nil})
       start_supervised!({ChatServer.Room.Supervisor, nil})
+      start_supervised!({Registry, keys: :unique, name: ChatServer.UserRegistry})
       :ok
     end
 
@@ -173,6 +175,8 @@ defmodule ChatServer.Command.ProcessorTest do
 
       assert {%{}, "Left \"lobby\".\r\n"} =
                Processor.process({:leave, "lobby"}, %{name: "john"})
+
+      assert ["jane"] = ChatServer.Room.list_users("lobby")
     end
   end
 
@@ -202,6 +206,65 @@ defmodule ChatServer.Command.ProcessorTest do
 
       assert {nil, "Something went horribly wrong.\r\n"} =
                Processor.process({:error, :unexpected_error}, nil)
+    end
+  end
+
+  describe "message" do
+    setup do
+      start_supervised!({ChatServer.Room.Registry, nil})
+      start_supervised!({ChatServer.Room.Supervisor, nil})
+      start_supervised!({Registry, keys: :unique, name: ChatServer.UserRegistry})
+      :ok
+    end
+
+    test "should not be able to send messages if not connected" do
+      assert {%{}, "You must be connected before performing this action. See /help connect.\r\n"} =
+               Processor.process({:message, "lobby", "hi mom"}, %{})
+    end
+
+    test "should not be able to send messages to a room that does not exist" do
+      assert {%{}, "Room not found.\r\n"} =
+               Processor.process({:message, "lobby", "hello"}, %{name: "john"})
+    end
+
+    test "should not be able to send messages to a room which you've not joined" do
+      ChatServer.Room.Supervisor.create_room("lobby", "john")
+
+      assert {%{}, "You must join the room before sending messages. See /help join.\r\n"} =
+               Processor.process({:message, "lobby", "hi people"}, %{name: "jane"})
+    end
+
+    test "should not be able to send messages to a room you've left" do
+      ChatServer.Room.Supervisor.create_room("lobby", "john")
+      Processor.process({:join, "lobby"}, %{name: "jane"})
+      Processor.process({:leave, "lobby"}, %{name: "jane"})
+
+      assert {%{}, "You must join the room before sending messages. See /help join.\r\n"} =
+               Processor.process({:message, "lobby", "hi people"}, %{name: "jane"})
+    end
+
+    test "should be able to send messages to a joined room" do
+      ChatServer.Room.Supervisor.create_room("lobby", "john")
+      Processor.process({:join, "lobby"}, %{name: "jane"})
+
+      assert {%{}, ["john"]} =
+               Processor.process({:message, "lobby", "hi people"}, %{name: "jane"})
+    end
+
+    test "should send message to everyone connected to the room" do
+      assert {:ok, _} = Registry.register(ChatServer.UserRegistry, "john", nil)
+      assert {:ok, _} = Registry.register(ChatServer.UserRegistry, "jane", nil)
+      assert {:ok, _} = Registry.register(ChatServer.UserRegistry, "james", nil)
+      assert {:ok, _} = Registry.register(ChatServer.UserRegistry, "junior", nil)
+
+      ChatServer.Room.Supervisor.create_room("lobby", "john")
+
+      Processor.process({:join, "lobby"}, %{name: "jane"})
+      Processor.process({:join, "lobby"}, %{name: "james"})
+      Processor.process({:join, "lobby"}, %{name: "junior"})
+
+      assert {%{}, ["john", "james", "junior"]} =
+               Processor.process({:message, "lobby", "hello people!"}, %{name: "jane"})
     end
   end
 end

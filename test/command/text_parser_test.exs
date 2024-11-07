@@ -178,4 +178,82 @@ defmodule ChatServer.Command.TextParserTest do
       assert {:connect, "xjohn-doex"} = TextParser.parse("/connect xjohn-doex")
     end
   end
+
+  describe "/message" do
+    test "should error without room name" do
+      assert {:error, :invalid_argument} = TextParser.parse("/message hello")
+      assert {:error, :invalid_argument} = TextParser.parse("/message hello ")
+    end
+
+    test "should error without message" do
+      assert {:error, :invalid_argument} = TextParser.parse("/message lobby")
+      assert {:error, :invalid_argument} = TextParser.parse("/message lobby ")
+    end
+
+    test "should only accept room names separated by dashes" do
+      assert {:message, "room", "name hello"} = TextParser.parse("/message room name hello")
+    end
+
+    test "should replace any separator with dashes" do
+      assert {:message, "john-doe", "hello world!"} =
+               TextParser.parse("/message john_doe hello world!")
+
+      assert {:message, "john-doe", "hello world!"} =
+               TextParser.parse("/message john#doe hello world!")
+
+      assert {:message, "john-doe", "hello world!"} =
+               TextParser.parse("/message john%doe hello world!")
+
+      assert {:message, "john-doe", "hello world!"} =
+               TextParser.parse("/message john~doe hello world!")
+
+      assert {:message, "john-doe", "hello world!"} =
+               TextParser.parse("/message john$doe hello world!")
+
+      assert {:message, "john-doe", "hello world!"} =
+               TextParser.parse("/message john[doe hello world!")
+
+      assert {:message, "john-doe", "hello world!"} =
+               TextParser.parse("/message john]doe hello world!")
+
+      assert {:message, "john-doe", "hello world!"} =
+               TextParser.parse("/message john)doe hello world!")
+
+      assert {:message, "john-doe", "hello world!"} =
+               TextParser.parse("/message john(doe hello world!")
+
+      assert {:message, "john-doe", "hello world!"} =
+               TextParser.parse("/message john{doe hello world!")
+
+      assert {:message, "john-doe", "hello world!"} =
+               TextParser.parse("/message john}doe hello world!")
+
+      assert {:message, "john-doe", "hello world!"} =
+               TextParser.parse("/message john=doe hello world!")
+
+      assert {:message, "john-doe", "hello world!"} =
+               TextParser.parse("/message john*doe hello world!")
+
+      assert {:message, "john-doe", "hello world!"} =
+               TextParser.parse("/message john+doe hello world!")
+
+      assert {:message, "john-doe", "hello world!"} =
+               TextParser.parse("/message john!doe hello world!")
+
+      assert {:message, "john-doe", "hello world!"} =
+               TextParser.parse("/message john@doe hello world!")
+
+      assert {:message, "john-doe", "hello world!"} =
+               TextParser.parse("/message john/doe hello world!")
+
+      assert {:message, "john-doe", "hello world!"} =
+               TextParser.parse("/message john\\doe hello world!")
+
+      assert {:message, "john-doe", "hello world!"} =
+               TextParser.parse("/message john'doe hello world!")
+
+      assert {:message, "john-doe", "hello world!"} =
+               TextParser.parse("/message (john'doe) hello world!")
+    end
+  end
 end

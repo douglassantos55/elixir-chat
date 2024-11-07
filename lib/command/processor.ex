@@ -5,6 +5,13 @@ defmodule ChatServer.Command.Processor do
     {state, "\r\n" <> Commands.help(command) <> "\r\n"}
   end
 
+  def process({:connect, username}, state) do
+    case Registry.register(ChatServer.UserRegistry, username, nil) do
+      {:ok, _} -> {Map.put(state, :name, username), "Welcome #{username}!\r\n"}
+      {:error, _} -> {state, "Username already taken. Please choose another username.\r\n"}
+    end
+  end
+
   def process({:create, room_name}, state) do
     with {:ok, username} <- ensure_connected(state) do
       case ChatServer.Room.Supervisor.create_room(room_name, username) do
@@ -63,10 +70,22 @@ defmodule ChatServer.Command.Processor do
     end
   end
 
-  def process({:connect, username}, state) do
-    case Registry.register(ChatServer.UserRegistry, username, nil) do
-      {:ok, _} -> {Map.put(state, :name, username), "Welcome #{username}!\r\n"}
-      {:error, _} -> {state, "Username already taken. Please choose another username.\r\n"}
+  def process({:message, room, message}, state) do
+    with {:ok, username} <- ensure_connected(state) do
+      case ChatServer.Room.Registry.whereis_name(room) do
+        :undefined ->
+          {state, "Room not found.\r\n"}
+
+        room_pid ->
+          case ChatServer.Room.joined?(room_pid, username) do
+            true ->
+              received = ChatServer.Room.broadcast(room_pid, username, message)
+              {state, received}
+
+            false ->
+              {state, "You must join the room before sending messages. See /help join.\r\n"}
+          end
+      end
     end
   end
 

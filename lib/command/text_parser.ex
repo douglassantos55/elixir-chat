@@ -37,6 +37,16 @@ defmodule ChatServer.Command.TextParser do
     end
   end
 
+  def parse("/message" <> args) do
+    case String.split(args, " ", parts: 2, trim: true) do
+      [room_name, message] ->
+        {:message, normalize(room_name), message}
+
+      _ ->
+        {:error, :invalid_argument}
+    end
+  end
+
   defp normalize(username) do
     case String.split(username, ~r/[^a-z0-9]/, trim: true)
          |> Enum.reject(&(&1 == ""))
