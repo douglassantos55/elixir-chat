@@ -95,11 +95,18 @@ defmodule ChatServer.Command.Processor do
         :invalid_argument ->
           "Invalid argument. Type /help for more information on each command.\r\n"
 
+        :invalid_command ->
+          "Invalid command. Type /help for a list of available commands.\r\n"
+
         _ ->
           "Something went horribly wrong.\r\n"
       end
 
     {state, message}
+  end
+
+  def process(_, state) do
+    process({:error, :invalid_command}, state)
   end
 
   defp ensure_connected(state) do

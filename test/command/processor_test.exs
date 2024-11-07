@@ -200,6 +200,11 @@ defmodule ChatServer.Command.ProcessorTest do
   end
 
   describe "error" do
+    test "should return nice error message for invalid commands" do
+      assert {[], "Invalid command. Type /help for a list of available commands.\r\n"} =
+               Processor.process({:foo, "bar"}, [])
+    end
+
     test "should return nice messages when errors occur" do
       assert {nil, "Invalid argument. Type /help for more information on each command.\r\n"} =
                Processor.process({:error, :invalid_argument}, nil)
