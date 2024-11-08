@@ -9,6 +9,10 @@ defmodule ChatServer.Room.Registry do
     {:ok, %{}}
   end
 
+  def list_rooms() do
+    GenServer.call(__MODULE__, {:list})
+  end
+
   def register_name(name, pid) do
     GenServer.call(__MODULE__, {:register, name, pid})
   end
@@ -23,6 +27,10 @@ defmodule ChatServer.Room.Registry do
 
   def send(name, message) do
     Kernel.send(whereis_name(name), message)
+  end
+
+  def handle_call({:list}, _, state) do
+    {:reply, Map.keys(state), state}
   end
 
   def handle_call({:register, name, pid}, _, state) do

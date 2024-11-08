@@ -2,17 +2,43 @@ defmodule ChatServer.Command.TextParserTest do
   use ExUnit.Case
   alias ChatServer.Command.TextParser
 
-  describe "/help" do
-    test "should error when more than one argument" do
-      assert {:error, :invalid_argument} = TextParser.parse("/help connect circuit")
+  describe "/invalid command" do
+    test "should error if given an unexpected command" do
+      assert {:error, :invalid_command} = TextParser.parse("/connecte name")
+      assert {:error, :invalid_command} = TextParser.parse("/createe room")
+      assert {:error, :invalid_command} = TextParser.parse("/deletee room")
+      assert {:error, :invalid_command} = TextParser.parse("/joinn room")
+      assert {:error, :invalid_command} = TextParser.parse("/leavei room")
+      assert {:error, :invalid_command} = TextParser.parse("/messagee room_name hello")
+      assert {:error, :invalid_command} = TextParser.parse("/helpe command")
     end
+  end
 
+  describe "/help" do
     test "should be valid without any arguments" do
       assert {:help, "all"} = TextParser.parse("/help")
       assert {:help, "all"} = TextParser.parse("/help ")
       assert {:help, "all"} = TextParser.parse("/help  ")
+      assert {:help, "all"} = TextParser.parse("/help\n command")
       assert {:help, "all"} = TextParser.parse("/help\n")
       assert {:help, "all"} = TextParser.parse("/help\r\n")
+      assert {:help, "all"} = TextParser.parse("/help\r\ncommand")
+      assert {:help, "all"} = TextParser.parse("/help\r\n command")
+      assert {:help, "connect-circuit"} = TextParser.parse("/help connect circuit")
+    end
+  end
+
+  describe "rooms" do
+    test "should ignore trailing whitespaces" do
+      assert {:rooms} = TextParser.parse("/rooms")
+      assert {:rooms} = TextParser.parse("/rooms ")
+      assert {:rooms} = TextParser.parse("/rooms\n")
+      assert {:rooms} = TextParser.parse("/rooms\r\n")
+    end
+
+    test "should error when an argument is given" do
+      assert {:error, :invalid_argument} = TextParser.parse("/rooms foo")
+      assert {:error, :invalid_argument} = TextParser.parse("/rooms foo bar")
     end
   end
 

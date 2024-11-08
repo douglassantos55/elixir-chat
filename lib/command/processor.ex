@@ -5,6 +5,17 @@ defmodule ChatServer.Command.Processor do
     {state, "\r\n" <> Commands.help(command) <> "\r\n"}
   end
 
+  def process({:rooms}, state) do
+    message = [
+      "Available rooms:\r\n\r\n",
+      for room <- ChatServer.Room.Registry.list_rooms() do
+        room <> "\r\n"
+      end
+    ]
+
+    {state, IO.iodata_to_binary(message)}
+  end
+
   def process({:connect, username}, state) do
     case Registry.register(ChatServer.UserRegistry, username, nil) do
       {:ok, _} -> {Map.put(state, :name, username), "Welcome #{username}!\r\n"}

@@ -20,6 +20,20 @@ defmodule ChatServer.Command.ProcessorTest do
     end
   end
 
+  describe "rooms" do
+    test "should list all registered rooms" do
+      start_supervised!({ChatServer.Room.Registry, nil})
+      start_supervised!({ChatServer.Room.Supervisor, nil})
+
+      ChatServer.Room.Supervisor.create_room("lobby", "john")
+      ChatServer.Room.Supervisor.create_room("games", "john")
+      ChatServer.Room.Supervisor.create_room("movies", "jane")
+
+      assert {%{}, "Available rooms:\r\n\r\ngames\r\nlobby\r\nmovies\r\n"} =
+               Processor.process({:rooms}, %{})
+    end
+  end
+
   describe "create" do
     setup do
       start_supervised!({ChatServer.Room.Registry, nil})
