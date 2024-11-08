@@ -1,7 +1,6 @@
 defmodule ChatServer.Command.Commands do
   @commands [
     "rooms",
-    "users",
     "connect",
     "create",
     "delete",
@@ -26,10 +25,6 @@ defmodule ChatServer.Command.Commands do
 
   def help("rooms") do
     "/rooms\t\t\t\tList all rooms created.\r\n"
-  end
-
-  def help("users") do
-    "/users\t\t\t\tList all connected users.\r\n"
   end
 
   def help("connect") do
