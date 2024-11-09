@@ -1,5 +1,5 @@
-defmodule ChatServer do
-  def init(port) do
+defmodule ChatServer.Server do
+  def start_link(port) do
     {:ok, listen_socket} =
       :gen_tcp.listen(port, [:binary, active: true, packet: :line, reuseaddr: true])
 
